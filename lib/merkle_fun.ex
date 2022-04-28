@@ -38,12 +38,17 @@ defmodule MerkleFun do
   end
 
   def verify(proof, node) do
+    IO.inspect "#-"
+    IO.inspect node
+    IO.inspect "-#"
+
     node = node
       |> Base.decode16!(case: :mixed)
       |> hash()
 
     proof = proof
     |>  Enum.map(&remove_0x/1)
+    |>  IO.inspect
     |>  Enum.map(fn s -> Base.decode16!(s, case: :mixed) end)
 
     Enum.reduce(proof, node, fn x,  y -> hash(x, y, true) end)
@@ -97,7 +102,14 @@ defmodule MerkleFun do
     end
   end
 
-  defp bytes_to_string(bytes), do: Base.encode16(bytes, case: :lower)
+
+  defp bytes_to_string(1) do
+    1
+  end
+
+  defp bytes_to_string(bytes) do
+    Base.encode16(bytes, case: :lower)
+  end
 
   defp add_0x(s), do: "0x#{s}"
   defp remove_0x("0x" <> s), do: s
@@ -108,7 +120,7 @@ defmodule MerkleFun do
     num = :math.log2(size) |> ceil
     num = 2 ** num
     num = num - size
-    # pad with 1, uses less space
+
     List.duplicate(1, num)
   end
 end

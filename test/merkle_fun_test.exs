@@ -192,6 +192,43 @@ defmodule MerkleFunTest do
     assert proof == expected
   end
 
+  test "big test 2" do
+    {:ok, known_wallets} = File.read("./known_wallets.txt")
+    {:ok, random_wallets} = File.read("./random_wallets.txt")
+
+    known_wallets = String.split(known_wallets)
+    random_wallets = String.split(random_wallets)
+    all_addresses = known_wallets ++ random_wallets
+      |> Enum.shuffle()
+
+    timestamp = :os.system_time(:millisecond)
+    #File.write("all_wallets_#{timestamp}.txt", Enum.map(all_addresses, fn a -> a <> "\n" end))
+
+    stripped_addresses = Enum.map(all_addresses, fn "0x" <> address -> address end)
+    stripped_known_wallets = Enum.map(known_wallets, fn "0x" <> address -> address end)
+
+    tree_sorted_pairs_true = MerkleFun.new(stripped_addresses, true)
+    tree_sorted_pairs_false = MerkleFun.new(stripped_addresses, false)
+    root_sorted_pairs_true = MerkleFun.root(tree_sorted_pairs_true)
+    root_sorted_pairs_false = MerkleFun.root(tree_sorted_pairs_false)
+
+    merkle_root_data = %{root_sorted_pairs: root_sorted_pairs_true, root_not_sorted_pairs: root_sorted_pairs_false}
+
+    address_and_proofs = Enum.map(stripped_known_wallets, fn address ->
+      proof_sorted_pairs_true = MerkleFun.proof(tree_sorted_pairs_true, address)
+      proof_sorted_pairs_false = MerkleFun.proof(tree_sorted_pairs_false, address)
+
+      %{address: address, proof_sorted_pairs: proof_sorted_pairs_true, proof_not_sorted_pairs: proof_sorted_pairs_false}
+    end)
+
+    #test_data = %{roots: merkle_root_data, address_and_proof: address_and_proofs }
+    #File.write("test_data_#{timestamp}.txt", Jason.encode!(test_data))
+
+    Enum.each(address_and_proofs, fn %{address: address, proof_sorted_pairs: proof_sorted_pairs_true, proof_not_sorted_pairs: proof_sorted_pairs_false} ->
+      IO.inspect MerkleFun.verify(proof_sorted_pairs_true, address, root_sorted_pairs_true)
+    end)
+  end
+
   test "big test with sort_pairs true" do
     expected = [
       "0x11481edda7910f8b360477264c7d95efdbbd6c54865b037826116f1381be931c",
